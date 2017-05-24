@@ -19,8 +19,9 @@
 from matrix_bot_api.matrix_bot_api import MatrixBotAPI
 from matrix_bot_api.mregex_handler import MRegexHandler
 from matrix_bot_api.mcommand_handler import MCommandHandler
-from functools import reduce
 import big10
+from util import item_to_md_html
+from pin import board2id, get_pins
 
 # Global variables
 USERNAME = ""  # Bot's username
@@ -28,53 +29,76 @@ PASSWORD = ""  # Bot's password
 SERVER = ""  # Matrix server URL
 
 
-def hi_callback(room, event):
-    # Somebody said hi, let's say Hi back
-    room.send_text("Hi, " + event['sender'])
-
-
-def echo_callback(room, event):
-    args = event['content']['body'].split()
-    args.pop(0)
-
-    # Echo what they said back
-    room.send_text(' '.join(args))
-
 def hottopic_callback(room, event):
     args = event['content']['body'].split()
     if len(args) == 1:
+        print("Get big10 topics")
         topics = big10.get_big10()
         num = 10
     elif len(args) == 2:
         try:
             num = int(args[1])
+            print("Get {} hottest topics".format(num))
             topics = big10.get_hottopic(num)
         except ValueError:
             room.send_text('usage: !hottopics [num]')
     else:
         room.send_text('usage: !hottopics [num]')
 
-    markdown_strs = list(map(lambda t: '[{}]({})'.format(t['title'], t['url']), topics))
-    md = reduce(lambda s,t: s+'  \n'+t, markdown_strs)
-    html_strs = list(map(lambda t: '<a href="{}">{}</a>'.format(t['url'], t['title']), topics))
-    html = reduce(lambda s,t: s+'<br />\n'+t, html_strs)
+    print("Going to reply...")
+    md, html = item_to_md_html(topics)
     room.send_html(html, body=md, msgtype="m.notice")
+
+
+def pins_callback(room, event):
+    args = event['content']['body'].split()
+    if len(args) != 2:
+        room.send_notice('usage: !pins <board name/id>')
+        return
+
+    try:
+        bid = int(args[1])
+    except ValueError:
+        bid = board2id(args[1])
+
+    if bid == -1:
+        room.send_notice('Invalid board name/id!')
+    pins = get_pins(bid)
+    md, html = item_to_md_html(pins)
+    room.send_html(html, body=md, msgtype="m.notice")
+
+
+def lcpu_event_callback(room, event):
+    pins = get_pins(13)
+    if pins is None:
+        room.send_notice('Error getting pins of board Linux.')
+        return
+    events = list(filter(lambda e: '活动' in e['title'], pins))
+    if len(events) == 0:
+        room.send_notice('No events found.')
+        return
+    md, html = item_to_md_html(events)
+    room.send_html(html, body=md, msgtype="m.notice")
+
 
 def main():
     # Create an instance of the MatrixBotAPI
     bot = MatrixBotAPI(USERNAME, PASSWORD, SERVER)
 
-    # Add a regex handler waiting for the word Hi
-    #hi_handler = MRegexHandler("Hi", hi_callback)
-    #bot.add_handler(hi_handler)
-
     hottopic_handler = MCommandHandler("hottopics", hottopic_callback)
     bot.add_handler(hottopic_handler)
+
+    pins_handler = MCommandHandler("pins", pins_callback)
+    bot.add_handler(pins_handler)
+
+    lcpu_event_handler = MCommandHandler("event", lcpu_event_callback)
+    bot.add_handler(lcpu_event_handler)
 
     # Start polling
     bot.start_polling()
 
-    # Infinitely read stdin to stall main thread while the bot runs in other threads
+    # Infinitely read stdin to stall main thread while the bot runs in other
+    # threads
     while True:
         input()
 
