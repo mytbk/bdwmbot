@@ -21,7 +21,7 @@ from matrix_bot_api.mregex_handler import MRegexHandler
 from matrix_bot_api.mcommand_handler import MCommandHandler
 import big10
 from util import item_to_md_html
-from pin import board2id, get_pins
+from pin import board2id, get_pins, read_post
 
 # Global variables
 USERNAME = ""  # Bot's username
@@ -79,6 +79,9 @@ def lcpu_event_callback(room, event):
         return
     md, html = item_to_md_html(events)
     room.send_html(html, body=md, msgtype="m.notice")
+    for e in events:
+        txt, html = read_post(e['url'])
+        room.send_html(html, body=txt, msgtype="m.notice")
 
 
 def main():
