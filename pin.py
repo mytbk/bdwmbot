@@ -1,7 +1,9 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+from functools import reduce
 from board_list import all_boards
+from util import tag_to_str
 
 bdwm_url = 'https://bbs.pku.edu.cn/v2/'
 
@@ -24,7 +26,8 @@ def get_pins(id):
             r = requests.get(board_url, timeout=2**i)
             break
         except requests.exceptions.Timeout:
-            sys.stderr.write('[board {}] Timeout for request #{}\n'.format(id, i))
+            sys.stderr.write(
+                '[board {}] Timeout for request #{}\n'.format(id, i))
             r = None
 
     if r is None:
@@ -56,3 +59,12 @@ def get_boardid(board):
     j = json.loads(r.content)
     return j['boards'][0]['id']
 
+
+def read_post(url):
+    r = requests.get(url)
+    soup = BeautifulSoup(r.content, 'html.parser')
+    tgt = soup.find('div', class_='body')
+    html = str(tgt)
+    txt = reduce(lambda x, y: x + '\n' + y,
+                 map(lambda t: tag_to_str(t), tgt.contents))
+    return txt, html
