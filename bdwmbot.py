@@ -69,11 +69,18 @@ def pins_callback(room, event):
 
 
 def lcpu_event_callback(room, event):
+    def event_filter(e):
+        kws = ['活动', '版聚', '通知']
+        for i in kws:
+            if i in e['title']:
+                return True
+        return False
+
     pins = get_pins(13)
     if pins is None:
         room.send_notice('Error getting pins of board Linux.')
         return
-    events = list(filter(lambda e: '活动' in e['title'], pins))
+    events = list(filter(event_filter, pins))
     if len(events) == 0:
         room.send_notice('No events found.')
         return
