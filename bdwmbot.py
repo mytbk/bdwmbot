@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+from time import sleep
 from matrix_bot_api.matrix_bot_api import MatrixBotAPI
 from matrix_bot_api.mregex_handler import MRegexHandler
 from matrix_bot_api.mcommand_handler import MCommandHandler
@@ -68,7 +69,7 @@ def pins_callback(room, event):
     room.send_html(html, body=md, msgtype="m.notice")
 
 
-def lcpu_event_callback(room, event):
+def get_lcpu_event():
     def event_filter(e):
         kws = ['活动', '版聚', '通知']
         for i in kws:
@@ -78,17 +79,54 @@ def lcpu_event_callback(room, event):
 
     pins = get_pins(13)
     if pins is None:
-        room.send_notice('Error getting pins of board Linux.')
-        return
+        return None, 'Error getting pins of board Linux.'
+
     events = list(filter(event_filter, pins))
     if len(events) == 0:
-        room.send_notice('No events found.')
+        return None, 'No events found.'
+
+    return events, None
+
+
+def lcpu_event_callback(room, event):
+    events, err = get_lcpu_event()
+    if err is not None:
+        room.send_notice(err)
         return
+
     md, html = item_to_md_html(events)
     room.send_html(html, body=md, msgtype="m.notice")
     for e in events:
         txt, html = read_post(e['url'])
         room.send_html(html, body=txt, msgtype="m.notice")
+
+
+sent_event_titles = []
+
+
+def send_unread_lcpu_events(rooms):
+    global sent_event_titles
+    events, err = get_lcpu_event()
+    if err is not None:
+        return
+
+    events_not_sent = list(
+        filter(lambda e: e['title'] not in sent_event_titles, events))
+    if len(events_not_sent) == 0:
+        return
+
+    sent_event_titles += [e['title'] for e in events_not_sent]
+
+    for room in rooms:
+        md, html = item_to_md_html(events_not_sent)
+        room.send_html(html, body=md, msgtype="m.notice")
+        for e in events_not_sent:
+            txt, html = read_post(e['url'])
+            room.send_html(html, body=txt, msgtype="m.notice")
+
+
+def do_timer_events(room):
+    send_unread_lcpu_events(room)
 
 
 def main():
@@ -110,7 +148,9 @@ def main():
     # Infinitely read stdin to stall main thread while the bot runs in other
     # threads
     while True:
-        input()
+        sleep(600)
+        rooms = bot.client.get_rooms().values()
+        do_timer_events(rooms)
 
 
 if __name__ == "__main__":
