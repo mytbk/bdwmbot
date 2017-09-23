@@ -1,6 +1,7 @@
 from bs4 import BeautifulSoup
 import requests
 import json
+import sys
 from functools import reduce
 from board_list import all_boards
 from util import tag_to_str
