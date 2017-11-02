@@ -26,9 +26,9 @@ def get_pins(id):
         try:
             r = requests.get(board_url, timeout=2**i)
             break
-        except requests.exceptions.Timeout:
+        except:
             sys.stderr.write(
-                '[board {}] Timeout for request #{}\n'.format(id, i))
+                '[board {}] Request error #{}\n'.format(id, i))
             r = None
 
     if r is None:
