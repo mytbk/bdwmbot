@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
+import json
 from time import sleep
 from matrix_bot_api.matrix_bot_api import MatrixBotAPI
 from matrix_bot_api.mregex_handler import MRegexHandler
@@ -23,12 +24,6 @@ from matrix_bot_api.mcommand_handler import MCommandHandler
 import big10
 from util import item_to_md_html
 from pin import board2id, get_pins, read_post
-
-# Global variables
-USERNAME = ""  # Bot's username
-PASSWORD = ""  # Bot's password
-SERVER = ""  # Matrix server URL
-
 
 def hottopic_callback(room, event):
     args = event['content']['body'].split()
@@ -115,7 +110,7 @@ def send_unread_lcpu_events(rooms):
     if len(events_not_sent) == 0:
         return
 
-    sent_event_titles += [e['title'] for e in events_not_sent]
+    sent_event_titles = events + []
 
     for room in rooms:
         md, html = item_to_md_html(events_not_sent)
@@ -130,6 +125,10 @@ def do_timer_events(room):
 
 
 def main():
+    configfp = open('config.json')
+    cfg = json.load(configfp)
+    USERNAME, PASSWORD, SERVER = cfg["username"], cfg["password"], cfg["server"]
+
     # Create an instance of the MatrixBotAPI
     bot = MatrixBotAPI(USERNAME, PASSWORD, SERVER)
 
