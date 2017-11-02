@@ -110,7 +110,7 @@ def send_unread_lcpu_events(rooms):
     if len(events_not_sent) == 0:
         return
 
-    sent_event_titles = events + []
+    sent_event_titles = [e['title'] for e in events]
 
     for room in rooms:
         md, html = item_to_md_html(events_not_sent)
