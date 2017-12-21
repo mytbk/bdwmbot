@@ -96,6 +96,18 @@ def lcpu_event_callback(room, event):
         room.send_html(html, body=txt, msgtype="m.notice")
 
 
+def readpost_callback(room, event):
+    args = event['content']['body'].split()
+    if len(args) != 2:
+        room.send_notice('usage: !readpost <url>')
+        return
+
+    url = args[1]
+    txt, html = read_post(url)
+    room.send_html(html, body=txt, msgtype="m.notice")
+
+
+
 sent_event_titles = []
 
 
@@ -140,6 +152,8 @@ def main():
 
     lcpu_event_handler = MCommandHandler("event", lcpu_event_callback)
     bot.add_handler(lcpu_event_handler)
+
+    bot.add_handler(MCommandHandler("readpost", readpost_callback))
 
     # Start polling
     bot.start_polling()
