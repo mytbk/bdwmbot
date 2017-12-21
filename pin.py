@@ -5,6 +5,7 @@ import sys
 from functools import reduce
 from board_list import all_boards
 from util import tag_to_str
+import copy
 
 bdwm_url = 'https://bbs.pku.edu.cn/v2/'
 
@@ -65,7 +66,27 @@ def read_post(url):
     r = requests.get(url)
     soup = BeautifulSoup(r.content, 'html.parser')
     tgt = soup.find('div', class_='body')
-    html = str(tgt)
+
+    tgt2 = BeautifulSoup('', 'html.parser')
+    isText = False
+    tmps = ''
+    for i in tgt.contents:
+        if i.find('br') is not None:
+            isText = True
+
+        if isText:
+            if i.string is not None:
+                tmps = tmps + str(i.string)
+            else:
+                _s = BeautifulSoup('<p>' + tmps + '</p>', 'html.parser')
+                tgt2.append(_s)
+                tmps = ''
+                tgt2.append(copy.copy(i))
+        else:
+            tgt2.append(copy.copy(i))
+
+    html = str(tgt2)
     txt = reduce(lambda x, y: x + '\n' + y,
-                 map(lambda t: tag_to_str(t), tgt.contents))
+                 map(lambda t: tag_to_str(t), tgt2.contents))
+
     return txt, html
