@@ -12,10 +12,9 @@ def item_to_md_html(item):
 
 
 def tag_to_str(t):
-    if hasattr(t, 'string'):
-        s = t.string
-        if s is None:
-            s = ''
-        return s
+    if hasattr(t, 'string') and t.string is not None:
+        return str(t.string)
+    elif hasattr(t, 'contents') and len(t.contents) > 0:
+        return reduce(lambda t1, t2: t1 + t2, map(lambda x: tag_to_str(x), t.contents))
     else:
         return ''
