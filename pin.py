@@ -67,6 +67,13 @@ def read_post(url):
     soup = BeautifulSoup(r.content, 'html.parser')
     tgt = soup.find('div', class_='body')
 
+    for aa in tgt.find_all('a'):
+        href = aa['href'].replace('jump-to.php?url=', '').replace('%2F', '/').replace('%3A', ':')
+        aa['href'] = href
+        del aa['data-no-pjax']
+        del aa['style']
+        del aa['target']
+
     tgt2 = BeautifulSoup('', 'html.parser')
     isText = False
     tmps = ''
@@ -78,9 +85,10 @@ def read_post(url):
             if i.string is not None:
                 tmps = tmps + str(i.string)
             else:
-                _s = BeautifulSoup('<p>' + tmps + '</p>', 'html.parser')
-                tgt2.append(_s)
-                tmps = ''
+                if len(tmps) > 0:
+                    _s = BeautifulSoup('<p>' + tmps + '</p>', 'html.parser')
+                    tgt2.append(_s)
+                    tmps = ''
                 tgt2.append(copy.copy(i))
         else:
             tgt2.append(copy.copy(i))
